@@ -1,0 +1,31 @@
+@charset "utf-8";
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  color: #fff;
+  background: #000 url(./images/81cb59d5-f190-4588-849f-947381ab6ed2.webp)
+    no-repeat center/cover;
+  background-attachment: fixed;
+  overflow-x: hidden;
+  color: black;
+}
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+.area {
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

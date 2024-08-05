@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>パーティクル</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "https://cdn.skypack.dev/three@0.132";
+      import OrbitControls from "https://cdn.skypack.dev/threejs-orbit-controls";
+      import Stats from "https://cdn.skypack.dev/stats.js.fps";
+      import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm";
+
+      //UIデバッグ
+      const gui = new GUI();
+
+      //FPSデバッグ
+      const stats = new Stats();
+      stats.showPanel(0);
+      document.body.appendChild(stats.dom);
+
+      //サイズ
+      const size = {
+        w: window.innerWidth,
+        h: window.innerHeight,
+      };
+
+      //シーン
+      const scene = new THREE.Scene();
+
+      //カメラ
+      const camera = new THREE.PerspectiveCamera(75, size.w / size.h, 0.1, 100);
+      camera.position.set(1, 1, 2);
+      scene.add(camera);
+
+      //ライト
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      //パーティクル
+      const texture = new THREE.TextureLoader().load("./abo.png");
+      const particlesGeometry = new THREE.TorusGeometry(10, 3, 16, 100);
+      //   const material = new THREE.MeshStandardMaterial();
+      //   const sphere = new THREE.Mesh(particlesGeometry, material);
+      //   scene.add(sphere);
+
+      //   バファジオメトリ
+      const bufferGeometry = new THREE.BufferGeometry();
+
+      const count = 2000;
+      //
+      //
+      // caht gpt
+      const directions = new Float32Array(count * 3); // 各パーティクルの方向ベクトル
+      for (let i = 0; i < count * 3; i += 3) {
+        directions[i] = Math.random() * 2 - 1; // X方向
+        directions[i + 1] = Math.random() * 2 - 1; // Y方向
+        directions[i + 2] = Math.random() * 2 - 1; // Z方向
+      }
+      const phases = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        phases[i] = Math.random() * Math.PI * 2; // 0 から 2πまでのランダムな値
+      }
+      // 以上
+      //
+      //
+      const vertices = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+
+      for (let i = 0; i < 3 * count; i++) {
+        vertices[i] = (Math.random() - 0.5) * 5;
+        colors[i] = Math.random();
+      }
+      console.log(vertices);
+
+      //   ジオメトリに組み込む
+      bufferGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(vertices, 3)
+      );
+      bufferGeometry.setAttribute(
+        "color",
+        new THREE.BufferAttribute(colors, 3)
+      );
+
+      const pointMaterial = new THREE.PointsMaterial({
+        size: 0.2,
+        color: 0xbbbb00,
+        alphaMap: texture,
+        transparent: true,
+        depthWrite: false,
+        sizeAttenuation: true,
+        vertexColors: true,
+        // blending: THREE.AdditiveBlending,
+      });
+
+      // pointMaterial.map = texture; //テクスチャを貼る
+
+      const particles = new THREE.Points(bufferGeometry, pointMaterial);
+      scene.add(particles);
+
+      //レンダラー
+      const renderer = new THREE.WebGLRenderer({ alpha: true });
+      renderer.setSize(size.w, size.h);
+      document.body.appendChild(renderer.domElement);
+
+      //コントロール
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.1;
+      // クロック
+      const clock = new THREE.Clock();
+
+      //アニメーション
+      const animate = () => {
+        stats.begin();
+        controls.update();
+        // サイトを開いてから時間を測定する。
+        const elapsedTime = clock.getElapsedTime();
+        for (let i = 0; i < count; i++) {
+          const i3 = i * 3;
+          const x = bufferGeometry.attributes.position.array[1];
+          const phase = phases[i];
+          bufferGeometry.attributes.position.array[i3 + 1] = Math.sin(
+            elapsedTime * 2 + x * 1 + phase
+          );
+        }
+        for (let i = 0; i < count; i++) {
+          const i3 = i * 3;
+          const phase = phases[i];
+          const speed = 0.05; // 動きのスピードを調整するパラメータ
+
+          // X, Y, Z座標を更新
+          bufferGeometry.attributes.position.array[i3] +=
+            directions[i3] * Math.sin(elapsedTime + phase) * speed;
+          bufferGeometry.attributes.position.array[i3 + 1] +=
+            directions[i3 + 1] * Math.cos(elapsedTime + phase) * speed;
+          bufferGeometry.attributes.position.array[i3 + 2] +=
+            directions[i3 + 2] * Math.sin(elapsedTime + phase) * speed;
+        }
+        for (let i = 0; i < count * 3; i += 3) {
+          let length = Math.sqrt(
+            directions[i] ** 2 + directions[i + 1] ** 2 + directions[i + 2] ** 2
+          );
+          directions[i] /= length;
+          directions[i + 1] /= length;
+          directions[i + 2] /= length;
+        }
+        bufferGeometry.attributes.position.needsUpdate = true;
+        bufferGeometry.attributes.position.needsUpdate = true;
+        for (let i = 0; i < count; i++) {
+          const i3 = i * 3;
+          colors[i3] = 0.5 + 0.5 * Math.sin(elapsedTime + phases[i]); // 赤色成分を変更
+          colors[i3 + 1] = 0.5 + 0.5 * Math.cos(elapsedTime + phases[i]); // 緑色成分を変更
+        }
+        bufferGeometry.attributes.color.needsUpdate = true;
+
+        // for (let i = 0; i < count; i++) {
+        //   const i3 = i * 2;
+        //   const x = bufferGeometry.attributes.position.array[i3];
+        //   bufferGeometry.attributes.position.array[i3 + 1] = Math.sin(
+        //     elapsedTime + x * 3
+        //   );
+        // }
+        // bufferGeometry.attributes.position.needsUpdate = true;
+
+        renderer.render(scene, camera);
+        stats.end();
+
+        requestAnimationFrame(animate);
+      };
+
+      animate();
+
+      //リサイズ
+      const onWindowResize = () => {
+        size.w = window.innerWidth;
+        size.h = window.innerHeight;
+        renderer.setSize(size.w, size.h);
+
+        camera.aspect = size.w / size.h;
+        camera.updateProjectionMatrix();
+      };
+
+      window.addEventListener("resize", onWindowResize);
+      //   ツールバーにサイズ追加。
+      gui.add(pointMaterial, "size", 0.01, 1);
+    </script>
+  </body>
+</html>
